@@ -44,14 +44,40 @@ class Bola(Mob):
         self.speed_y = speed_y
         self.forma = forma
     
-    def ball_restart(self):
+    def ball_restart(self, score_time):
         # Centraliza a bola
         self.forma.center = (largura_tela/2, altura_tela/2)
-        # Decide se a direcao de saida de forma aleatoria
-        self.speed_y *= random.choice((1,-1))
-        self.speed_x *= random.choice((1,-1))
 
-    def movimentoBola(self):
+        tempo_atual = pyg.time.get_ticks()  
+
+        tempo = tempo_atual - score_time
+
+        hud = game_font.render("Inicio em: ", True, light_grey)
+        tela.blit(hud, ((largura_tela/2 -80, altura_tela / 2 + 60)))
+
+        if tempo < 1000:
+            contador = game_font.render("3", True, light_grey)
+            tela.blit(contador, ((largura_tela/2 + 80, altura_tela /2 + 60)))
+        
+        if tempo < 2000 and tempo > 1000:
+            contador = game_font.render("2", True, light_grey)
+            tela.blit(contador, ((largura_tela/2 + 80, altura_tela /2 + 60)))
+        
+        if tempo < 3000 and tempo > 2000:
+            contador = game_font.render("1", True, light_grey)
+            tela.blit(contador, ((largura_tela/2 + 80, altura_tela /2 + 60)))
+
+        if tempo_atual - score_time < 3000:
+            self.speed_x, self.speed_y = 0,0 
+        else:
+            # Decide se a direcao de saida de forma aleatoria
+            self.speed_y = 7 * random.choice((1,-1))
+            self.speed_x = 7 * random.choice((1,-1))
+            # Seta o score_time para None para evitar erros
+            score_time = None
+
+        return score_time
+    def movimentoBola(self, score_time):
 
         self.forma.x += self.speed_x
         self.forma.y += self.speed_y
@@ -63,14 +89,15 @@ class Bola(Mob):
         # Se acertar a lateral esquerda ele reinicia a bola para o centro e aumenta o score do player ou oponente
         if self.forma.left <= 0: 
                 player.score += 1
-                self.ball_restart()
+                score_time = pyg.time.get_ticks()
         if self.forma.right >= largura_tela:
                 oponente.score += 1
-                self.ball_restart()
-
+                score_time = pyg.time.get_ticks()
         # Se entrar em colisao com o player ou com o oponente inverte a velocidade em x
         if self.forma.colliderect(player.forma) or self.forma.colliderect(oponente.forma):
             self.speed_x *= -1
+        
+        return score_time
 
 # Fim da classe Bola
 
@@ -108,6 +135,9 @@ oponente = Oponente(7, pyg.Rect(10, altura_tela/2 - 70, 10, 140), oponente_score
 bg_color = pyg.Color('grey12')
 light_grey = (200, 200, 200)
 
+# Score Timer
+score_time = True
+
 
 while True:
     # Entrada para encerrar o programa caso fechar a janela
@@ -140,7 +170,7 @@ while True:
     player.player_animation()
     oponente.oponente_ai()
 
-    ball.movimentoBola()
+    score_time = ball.movimentoBola(score_time)
     
     # Visuals
     tela.fill(bg_color)
@@ -157,6 +187,10 @@ while True:
     oponente_text = game_font.render(f"{oponente.score}", True, light_grey)
     tela.blit(oponente_text, ((largura_tela/2 - 32, altura_tela/2)))
     
+    if score_time:
+        score_time = ball.ball_restart(score_time)
+        
+
     # Atualizando a janela a 60 frames por segundo
     pyg.display.flip()
     clock.tick(60)
