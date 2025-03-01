@@ -1,10 +1,17 @@
 import pygame as pyg, sys, random
 
 # Classe para objetos player e Oponente
-class Jogador:
+class Mob:
     def __init__(self, speed, forma):
         self.speed = speed
         self.forma = forma
+# Fim da classe Jogador.
+
+class Player(Mob):
+    def __init__(self, speed, forma, score):
+        super().__init__(speed, forma)
+        self.score = score
+
     def player_animation(self):
         self.forma.y += self.speed
         if self.forma.top <= 0:
@@ -12,6 +19,14 @@ class Jogador:
         if self.forma.bottom >= altura_tela:
             self.forma.bottom = altura_tela
 
+# Fim da classe Player
+
+class Oponente(Mob):
+    
+    def __init__(self, speed, forma, score):
+        super().__init__(speed, forma)
+        self.score = score
+    
     def oponente_ai(self):
         if self.forma.top < ball.forma.y:
             self.forma.top += self.speed
@@ -20,10 +35,10 @@ class Jogador:
         if self.forma.top <= 10 or self.forma.bottom >= altura_tela:
             self.speed *= -1
 
-# Fim da classe Jogador.
+#Fim da classe Oponente
 
 # Classe para o objeto ball
-class Bola:
+class Bola(Mob):
     def __init__(self, speed_x, speed_y, forma):
         self.speed_x = speed_x
         self.speed_y = speed_y
@@ -45,15 +60,21 @@ class Bola:
         if self.forma.top <= 0 or self.forma.bottom >= altura_tela:
             self.speed_y *= -1
 
-        # Se acertar a lateral esquerda ele reinicia a bola para o centro
-        if self.forma.left <= 0 or self.forma.right >= largura_tela:
-            self.ball_restart()
+        # Se acertar a lateral esquerda ele reinicia a bola para o centro e aumenta o score do player ou oponente
+        if self.forma.left <= 0: 
+                player.score += 1
+                self.ball_restart()
+        if self.forma.right >= largura_tela:
+                oponente.score += 1
+                self.ball_restart()
 
         # Se entrar em colisao com o player ou com o oponente inverte a velocidade em x
         if self.forma.colliderect(player.forma) or self.forma.colliderect(oponente.forma):
             self.speed_x *= -1
 
 # Fim da classe Bola
+
+
 
 # Setup
 pyg.init()
@@ -74,13 +95,19 @@ pyg.display.set_caption('Pong')
 direcao_x = random.choice((7,-7))
 direcao_y = random.choice((7,-7))
 
-# Objetos, self, Jogador
+# Variaveis texto
+player_score = 0
+oponente_score = 0
+game_font = pyg.font.Font("freesansbold.ttf", 32)
+
+# Objetos, Bola, Jogador
 ball = Bola(direcao_x, direcao_y, pyg.Rect(largura_tela/2 - 10, altura_tela/2 - 10, 20, 20))
-player = Jogador(0, pyg.Rect(largura_tela - 20, altura_tela/2 - 70, 10, 140))
-oponente = Jogador(7, pyg.Rect(10, altura_tela/2 - 70, 10, 140))
+player = Player(0, pyg.Rect(largura_tela - 20, altura_tela/2 - 70, 10, 140), player_score)
+oponente = Oponente(7, pyg.Rect(10, altura_tela/2 - 70, 10, 140), oponente_score)
 
 bg_color = pyg.Color('grey12')
 light_grey = (200, 200, 200)
+
 
 while True:
     # Entrada para encerrar o programa caso fechar a janela
@@ -122,6 +149,14 @@ while True:
     pyg.draw.ellipse(tela, light_grey, ball.forma)
     pyg.draw.aaline(tela, light_grey, (largura_tela/2,0), (largura_tela/2, altura_tela))
 
+    # Mostrando o Score do Player
+    player_text = game_font.render(f"{player.score}", True, light_grey)
+    tela.blit(player_text, ((largura_tela/2 + 16, altura_tela/2)))
+
+    # Mostrando o Score do oponente
+    oponente_text = game_font.render(f"{oponente.score}", True, light_grey)
+    tela.blit(oponente_text, ((largura_tela/2 - 32, altura_tela/2)))
+    
     # Atualizando a janela a 60 frames por segundo
     pyg.display.flip()
     clock.tick(60)
